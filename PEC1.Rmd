@@ -1,0 +1,405 @@
+---
+title: "Análisis de datos ómicos - PEC 1"
+author: "Liliana Cifuentes"
+output:
+  pdf_document: 
+    toc: true
+    number_sections: true
+    keep_tex: true
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+suppressMessages(suppressWarnings(library(SummarizedExperiment)))
+suppressMessages(suppressWarnings(library(dplyr)))
+
+```
+
+# Resumen
+
+El síndrome metabólico de la caquexia es una condición importante en la salud pública al implicar catabolismo tisular, que se asocia a discapacidad y bajas tasas de supervivencia en los pacientes con una enfermedad subyacente. El `dataset` `human_cachexia` proporciona datos metabolómicos relevantes, pacientes con cáncer de colon o pulmón, con o sin el síndrome, que a través de un análisis y estudio de los mismos permite identificar las alteraciones y patrones en los metabolitos involucrados en el catabolismo muscular. Se implementó `SummarizedExperiment` por su flexibilidad y utilidad en el uso de datos experimentales, a través del cual se realizaron análisis descriptivos de los datos, encontrando que aquellos metabolitos vinculados con la pérdida muscular, tales como la Creatinina, la Glucosa y aquellos pertenecientes a las vías del metabolismo de aminoácidos, presentan variabilidades destacables, con tendencias a niveles mayores.
+
+------------------------------------------------------------------------
+
+# Objetivos
+
+-   Desarrollar habilidades en el manejo de GitHub y su integración con un proyecto en R, para la gestión de versiones.
+
+-   Analizar las diferencias clave entre las clases `ExpressionSet` y `SummarizedExperiment` del proyecto `Bioconductor`, para aplicarlo en el análisis de datos ómicos.
+
+-   Realizar un análisis exploratorio del `dataset` metabolómico `human_cachexia`, a partir de la clase `SummarizedExperiment`, con el fin de identificar patrones y relaciones relevantes entre las variables, para obtener una comprensión de los datos en el contexto de estudios sobre caquexia y la vía metabólica del catabolismo muscular en pacientes con cáncer.
+
+------------------------------------------------------------------------
+
+# Métodos
+
+Se creó un repositorio en GitHub para la gestión de versiones. Se seleccionó el `dataset` `human_cachexia` por su relevancia en salud pública, y se leyó directamente, desde el repositorio `nutrimetabolomics` en GitHub, en lenguaje de programación R. Posteriormente, se creó la clase `SummarizedExperiment` a través de R, almacenando los datos de expresión de los metabolitos, los metadatos de los metabolitos, los metadatos de las muestras en el atributo correspondiente para cada uno de estos, y creando el atributo `metadata` con la información disponible en el artículo de Eisner et al., 2010 desde donde se extrajeron los datos del `dataset`.
+
+Se realizó un análisis exploratorio de los datos, evaluando inicialmente la estructura de la base de datos y sus metadatos a través de los atributos assay, colData y rowData, verificando a su vez la ausencia de datos con las funciones sum e is.nan. Asimismo, se calculó un resumen estadístico por metabolito a través de la función summary. A partir de lo observado en este análisis, se calcularon las diferencias entre las medias y las medianas de los niveles de los metabolitos con el fin de verificar la simetría en la distribución de las muestras. También, se evaluó la variabilidad de los niveles de los metabolitos a través del cálculo de la desviación estándar para cada metabolito y se graficó en un diagrama de barras.
+
+Se obtuvo un mapa de calor directamente de la matriz correspondiente a los niveles de los metabolitos, buscando identificar patrones en los mismos, y de igual forma se calculó la matriz de correlación entre los metabolitos, la cual fue visualizada a través de un mapa de calor; estos mapas se obtuvieron a través de la función pheatmap. Finalmente, se realizó un análisis de componentes principales (PCA) a través de la función prcomp, con el cual se redujo la dimensionalidad de la base de datos, y se pudieron identificar diferencias en la variabilidad de los datos de acuerdo con el grupo de pacientes (cachexia o control) o las categorías a las cuales se podían asociar los metabolitos de acuerdo con la literatura relacionada con las vías metabólicas, obtenida a partir de (METACYC, 2025).
+
+------------------------------------------------------------------------
+
+# Resultados
+
+El `dataset` `human_cachexia` fue seleccionado debido a se trata de una base de datos públicamente disponible a través del repositorio `nutrimetabolomics` en GitHub de Sánchez Pla, A.; lo que permite su exploración y utilización. La información del Data_Catalog, en el mismo repositorio, describe que posee con 77 muestras de orina (47 pacientes con caquexia y 30 pacientes control) y 63 características; y dentro de su descripción se garantiza que las muestras no están emparejadas, que todos los valores de los datos son numéricos, y se detectaron 0 valores faltantes; lo que sugiere que se trata de una base de datos con buena calidad.
+
+Esta base de datos se relaciona con un síndrome metabólico complejo, incapacitante y potencialmente mortal: la caquexia, que está asociada a enfermedades crónicas, como el cáncer, EPOC, CHF, etc.; y se caracteriza por alteraciones en el metabolismo que implican catabolismo tisular (pérdida de masa muscular), lo cual se traduce en pérdida de peso, fuerza y fatiga extrema. Este síndrome al estar relacionado con una enfermedad subyacente tiene un impacto significativo en el paciente al afectar la tolerancia hacia el tratamiento, ya que se asocia a la discapacidad y a bajas tasas de supervivencia, lo que la convierte en una condición relevante en la salud pública. Actualmente se cuenta con ciertos tratamientos, como la suplementación nutricional, sin embargo, estos no son capaces de ralentizar el metabolismo o revertir el síndrome (Pfizer, 2025)
+
+Por lo tanto, esta base de datos metabolómicos en caquexia que incluye pacientes con cáncer de colon o pulmón, con o sin perdida muscular, a los cuales se les realizó un estudio de orina para identificar varios metabolitos excretados e involucrados en el catabolismo muscular, y por lo tanto relacionados con este síndrome (Eisner, R. et al, 2010), permitiría identificar alteraciones y patrones de dichos metabolitos; con el fin de comprender esta relación y como punto de partida para posteriores investigaciones que contribuyan a establecer tratamientos eficaces.
+
+Para leer el `dataset` de metabolómica `human_cachexia`, del repositorio de GitHub proporcionado, se realizarón los siguientes pasos:
+
+```{r}
+# Instalar paquete
+#install.packages("readr")
+
+# Llamar librerias
+library(readr)
+library(knitr)
+
+# Definir la URL del archivo
+url = "https://raw.githubusercontent.com/nutrimetabolomics/metaboData/refs/heads/main/Datasets/2024-Cachexia/human_cachexia.csv"
+
+# Leer el archivo CSV
+data = read_csv(url)
+```
+
+Con la lectura del data frame se visualiza que se trata de una tabla con 77 filas y 65 columnas, con 2 características formato caracter (Patient ID, y Muscle loss) y 63 formato numerico. Luego, se creo el objeto clase `SummarizedExperiment` como se explica en el siguiente código:
+
+```{r}
+# Instalar paquetes
+#install.packages("BiocManager")
+#BiocManager::install("SummarizedExperiment")
+
+# Llamar libreria
+library(SummarizedExperiment)
+
+# Crear clase SummarizedExperiment
+
+# Crear argumento assay (datos de expresion de metabolitos)
+ensayo = t(as.matrix(data[,!(colnames(data) %in% c("Patient ID", "Muscle loss"))]))
+colnames(ensayo) = data$`Patient ID` # Asignar nombre
+
+# Crear argumento rowdata (metadatos de los metabolitos)
+rowdata = data.frame(metabolito=tail(colnames(data),-2))
+
+# Crear argumento coldata (metadatos de las muestras)
+coldata = data.frame(grupo=data$`Muscle loss`, row.names=data$`Patient ID`)
+
+# Añadir metadatos adicionales sobre el experimento
+metadatos = list(experiment_date = "2010-08-01", protocol = "detección de metabolitos en orina a través del espectrómetro de RMN Varian INOVA de 600 MHz, sonda de triple eje con gradiente de 5-mm HCN; e identificados a través del software Chenomx NMRSuite 4.6", researchers = "Roman Eisner, Cynthia Stretch, Thomas Eastman, Jianguo Xia, David Hau, Sambasivarao Damaraju, Russell Greiner, David S. Wishart & Vickie E. Baracos", study_name = "Learning to predict cancer-associated skeletal muscle wasting from 1H-NMR profiles of urinary metabolites")
+
+# Crear SummarizedExperiment
+experimento = SummarizedExperiment(assay=list(ensayo=ensayo), rowData=rowdata, colData=coldata, metadata=metadatos)
+
+# Guardar en formato .Rda
+save(experimento, file = "SummarizedExperiment.Rda")
+```
+
+A continuación, se realizó un análisis exploratorio general del objeto clase `SummarizedExperiment` creado.
+
+```{r}
+# Instalar paquetes
+#install.packages("kableExtra")
+
+# Llamar librerias
+library(dplyr)
+
+# Definir tabla con la informacion del atributo metadata
+infoDF = data.frame(matrix(rep(NA, 2 * length(metadatos)), ncol = 2))
+for (i in 1:length(metadatos)) {
+    infoDF[i, 1] = names(metadatos)[i]
+    infoDF[i, 2] = metadatos[i]
+}
+colnames(infoDF) = c("Campo", "Descripción")
+
+# Imprimir
+infoDF %>%
+    kableExtra::kable() %>%
+    kableExtra::kable_styling()
+```
+
+Se verificó que la clase estuviera estructurada correctamente visualizando las primeras 6 características de la matriz `assay`, y las primeras y últimas 6 muestras con el respectivo grupo al que pertenecen, y las primeras 6 características (metabolitos); encontrando que se construyó correctamente (ver Anexo).
+
+Se verificó que efectivamente la base de datos no tiene valores faltantes:
+
+```{r}
+# Obtener el numero de valores faltantes en la matriz
+sum(is.nan(assay(experimento)))
+```
+
+Se realizó un resumen estadístico por metabolito con el fin de identificar de forma más rápida si los valores encontrados en la muestra en general, corresponden a los rangos esperados para cada metabolito; encontrando que todos los metabolitos tienen valores mínimos y máximos extremos.
+
+```{r}
+# Realizar resumen estadistico descriptivo de los datos por metabolito
+summary(t(assay(experimento)))
+```
+
+Se establecieron las diferencias entre la media y la mediana de los metabolitos, para definir la simetría en la distribución de los niveles de los metabolitos, y se encontró que en todos los casos la media era mayor que la mediana (ver Anexo).
+
+Se realizó un análisis de variabilidad para establecer aquellos metabolitos que más cambios evidencian entre las muestras, observando que hay una variabilidad relativamente baja entre todos los metabolitos, a excepción del Citrato, Creatinina, Glucosa, Glicina, Hipurato, Lactato, y la trimetilamina N-oxido, donde se pueden destacar el Citrato con aproximadamente 2000, el Hipurato con aproximadamente 3000 y la Creatinina con más de 6000 (ver Anexo).
+
+También se hizo un mapa de calor de los niveles de metabolítos, donde no se observaron patrones entre las muestras. Asimismo, se realizó un análisis de correlación entre los metabolitos, donde se identificaron tres grupos entre los niveles evidenciados (ver Anexo).
+
+Se realizó un análisis de componentes principales, para reducir la dimensionalidad de los datos, y poder identificar patrones en la variabilidad de los niveles de metabolitos, basado en: los grupos de pacientes (donde caquexia presenta una mayor dispersión que el grupo de control, cuyos datos se encuentran más agrupados) y las categorías de metabolitos (encontrando mayor dispersión en las categorías metabolismo de carbohidratos, de aminoácidos, vías de detoxificación y microbioma, y biomarcadores de estrés y energía) (ver Anexo).
+
+------------------------------------------------------------------------
+
+# Discusión
+
+Los reultados de la creación del objeto `SummarizedExperiment` permite confirmar que fue creado correctamente, con los datos de expresión de los metabolitos almacenados en `assay`, los metadatos de los metabolitos en `rowData`, y los metadatos de las muestras en `colData`. Además, coinciden las dimensiones con lo realizado: 63 metabolitos en filas, y 77 muestras en columnas.
+
+De acuerdo con los resultados de los estadísticos descriptivos, se evidencia que todos los metabolitos tienen valores mínimos y máximos extremos, indicando una alta variabilidad, algunos con más de 1000 de diferencia. Evaluando las medidas de tendencia central, se encontró que en todos los casos la media era mayor que la mediana, indicando una tendencia hacia una mayor concentración de los metabolitos, en especial Glucosa, Glicina, Citrato, Hipurato y Creatinina.
+
+En general se observa que hay una variabilidad relativamente baja entre todos los metabolitos, a excepción del Citrato, Creatinina, Glucosa, Glicina, Hipurato, Lactato, y la trimetilamina N-oxido, donde se pueden destacar el Citrato con aproximadamente 2000, el Hipurato con aproximadamente 3000 y la Creatinina con más de 6000, indicando que las muestras poseen una alta variabilidad para estos metabolitos específicos; estos últimos son característicos en la pérdida de masa muscular y en la disminución en la capacidad energética de las células, comunes en la caquexia.
+
+En el mapa de calor se observa que no se evidencian patrones destacables en los niveles de los metabolitos. Sin embargo, al realizar el análisis de correlación entre los metabolitos, se evidencian patrones en tres grupos, que pueden estar asociados con las rutas metabólicas en las cuales están involucrados estos metabolitos.
+
+Posteriormente, al aplicar el análisis de componentes principales, teniendo en cuenta los grupos de pacientes, se observa que, en los tres primeros componentes, el grupo de caquexia presenta una mayor dispersión que el grupo de control, cuyos datos se encuentran más agrupados. Por su parte, entre las categorías de metabolitos, definidos de acuerdo con su pertenencia a alguna vía metabólica, se encontró que, en metabolismo de carbohidratos, de aminoácidos, vías de detoxificación y microbioma, y biomarcadores de estrés y energía presentan mayor dispersión que las demás categorías. Esto concuerda con que el metabolismo de carbohidratos y aminoácidos es fundamental para la disponibilidad de nutrientes, y al verse afectado en pacientes por cáncer, estos nutrientes son secuestrados por las células tumorales, que termina provocando el catabolismo muscular; por otro lado, una alteración en las vías de detoxificación y microbioma puede afectar la respuesta inmune e inflamatoria de los tejidos, lo cual está ampliamente evidenciado en cáncer de colon y que se encuentra siendo estudiado en cáncer de pulmón (American Association for Cancer Research, 2020). Además, los biomarcadores de estrés y energía son indicadores del estrés metabólico y el estado energético de las células, asociado directamente con el desarrollo del cáncer y de la caquexia.
+
+Para destacar, se evidenció que la Creatinina tiende a tener mayor variabilidad y asimetría hacia valores altos, la cual está relacionada con el catabolismo muscular, al ser un producto de la degradación de la creatina, una molécula específica de la energía muscular, lo cual coincide con lo encontrado en Eisner et al. (2010). Asimismo, la Glucosa tuvo un comportamiento similar a la Creatinina, y también se destaca por estar relacionada con la pérdida muscular de acuerdo con lo encontrado por los autores.
+
+Esto también está vinculado con el hallazgo de que los metabolitos asociados con las vías del metabolismo de aminoácidos presentaron mayor variabilidad, como lo expresan los autores, al estar relacionado con el metabolismo de proteínas, posiblemente involucradas con el tejido muscular.
+
+Teniendo en cuenta lo observado anteriormente, se puede destacar que las diferencias clave entre la clase `ExpressionSet` y `SummarizedExperiment` consisten en:
+
+-   **Modulo:** Ambas clases hacen parte del proyecto `Bioconductor`, por un lado, `ExpressionSet` hace parte del paquete Biobase; mientras que `SummarizedExperiment` hace parte del paquete con el mismo nombre `SummarizedExperiment`.
+
+-   **Estructura:** `ExpressionSet` almacena los datos de expresión en una matriz `assayData`, además es posible disponer de los metadatos de la característica de interés (genes, exones…) en el data frame `featureData` y/o los metadatos de las muestras a través del data frame `phenoData`. Por su parte la clase `SummarizedExperiment` almacena los datos de expresión en una matriz `assay`, los metadatos de la característica de interés están en el data frame `rowData`, y es posible disponer los metadatos de las muestras a través del data frame `colData`.
+
+-   **Flexibilidad en las filas de los metadatos de la característica de interés:** `SummarizedExperiment` permite manejar la información de las filas de manera flexible, ya sea de forma convencional a través del data frame (descrito en la viñeta anterior) o integrando el objeto `GRanges` a través de su subclase `RangedSummarizedExperiment` para rangos genómicos; por otro lado el `ExpressionSet` tiene una estructura predeterminada y establecida donde siempre se almacena la información de la característica de interés a través del data frame (descrito en la viñeta anterior).
+
+-   **Coordinación de los metadatos y los datos de expresión para manipular subconjuntos:** Para eliminar subconjuntos con información no deseada, a pesar de que el `ExpressionSet` también trabaja con metadatos, esta clase no tiene una coordinación automática con los datos de expresión, por lo que es necesario una verificación manual; mientras que `SummarizedExperiment` permite realizarlo de forma sincronizada ya que al coordinar estas dos fuentes de información, es posible eliminar subconjuntos completos sin error.
+
+(Morgan, M., 2023), (Irizarry, R., S.F.), (Morgan, M., 2020), (Falcon, S., 2007), (Davis, S., 2014), y (R Documentation, S.F.)
+
+------------------------------------------------------------------------
+
+# Conclusión
+
+El `SummarizedExperiment` es una clase más actualizada y flexible para el adecuado procesamiento y análisis de datos ómicos ya que sincroniza la información de los datos de expresión con los metadatos garantizando estudios sin errores en la manipulación de subconjuntos de información; además, posibilita la integración con otros objetos como `GRanges` para potenciar su utilidad.
+
+También, a partir de los datos fue posible evidenciar los patrones en los niveles de metabolitos relacionados con la caquexia, de acuerdo con los resultados esperados con base en lo evidenciado en el artículo del estudio del dataset. De esta forma, se observó como aquellos metabolitos vinculados con la pérdida muscular, tales como la Creatinina, la Glucosa y aquellos pertenecientes a las vías del metabolismo de aminoácidos, presentan variabilidades destacables, con tendencias a niveles mayores.
+
+Finalmente, se evidenció la utilidad de gestionar proyectos de R con el apoyo del control de versiones con Git, ya que permite realizar un seguimiento a los cambios realizados en código y documentación, y mantener y almacenar los proyectos en un entorno seguro.
+
+------------------------------------------------------------------------
+
+# Bibliografía
+
+-   Pfizer. (2025) Caquexia. Pfizer. Recuperado de: <https://www.pfizer.com/disease-and-conditions/cachexia>
+
+-   Eisner et al. (2010) Learning to predict cancer-associated skeletal muscle wasting from 1H-NMR profiles of urinary metabolites. Metabolomics 7:25-34. <https://doi.org/10.1007/s11306-010-0232-9>
+
+-   Morgan, M. et al. (2023). SummarizedExperiment for Coordinating Experimental Assays, Samples, and Regions of Interest. Bioconductor. Recuperado de: <https://bioconductor.org/packages/release/bioc/vignettes/SummarizedExperiment/inst/doc/SummarizedExperiment.html>
+
+-   Irizarry, R. & Love, M. (S.F.) SummarizedExperiment class in Depth. GitHub. Recuperado de: <https://genomicsclass.github.io/book/pages/bioc1_summex.html>
+
+-   Morgan, M. et al. (2020). RangedSummarizedExperiment-class: RangedSummarizedExperiment objects. R Documentation. Recuperado de: <https://rdrr.io/bioc/SummarizedExperiment/man/RangedSummarizedExperiment-class.html>
+
+-   Falcon, S. et al. (2007). An Introduction to Bioconductor’s ExpressionSet Class. Bioconductor. Recuperado de: <https://www.bioconductor.org/packages/devel/bioc/vignettes/Biobase/inst/doc/ExpressionSetIntroduction.pdf>
+
+-   Davis, S. (2014). Introduction to the ExpressionSet. GitHub. Recuperado de: <https://seandavi.github.io/BiocBrazil2014/vignettes/ExpressionSetSlides.pdf>
+
+-   R Documentation. (S.F.). ExpressionSet: Class to Contain and Describe High-Throughput Expression Level Assays. R Documentation. Recuperado de: <https://www.rdocumentation.org/packages/Biobase/versions/2.32.0/topics/ExpressionSet>
+
+-   METACYC. (2025). Database. METACYC. Recuperado de: <https://metacyc.org/>
+
+-   American Association for Cancer Research. (2020). El microbioma pulmonar puede afectar la patogénesis y el pronóstico del cáncer de pulmón. American Association for Cancer Research. Recuperado de: <https://ecancer.org/es/news/19061-el-microbioma-pulmonar-puede-afectar-la-patogenesis-y-el-pronostico-del-cancer-de-pulmon>
+
+------------------------------------------------------------------------
+
+# Referencia - Repositorio
+
+Dirección del repositorio:
+
+# Anexo
+
+## Visualisación de la clase SummarizedExperiment
+
+```{r}
+# Imprimir primeras 6 filas de atributo assay
+head(assay(experimento)) %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling()
+
+# Imprimir primeras 6 filas de atributo colData
+head(colData(experimento)) %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling()
+
+# Imprimir ultimass 6 filas de atributo colData
+tail(colData(experimento)) %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling()
+
+# Imprimir primeras 6 filas de atributo rowData
+head(rowData(experimento)) %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling()
+```
+
+## Medias y medianas por metabolito
+
+```{r}
+# Obtener medias y medianas para cada metabolito
+medias = apply(t(assay(experimento)),2,mean)
+medianas = apply(t(assay(experimento)),2,median)
+
+# Calcular las diferencias
+diferencias = medias-medianas
+
+# Ordenar de menor a mayor
+diferencias = diferencias[order(diferencias)]
+
+# Imprimir
+kable(diferencias)
+```
+
+## Diagramas de barras de la variabilidad de los metabolitos
+
+```{r}
+# Calcular la desviacion estandar para cada metabolito
+variabilidad = apply(t(assay(experimento)), 2, sd)
+
+# Graficar diagrama de barras de la variabilidad de los primeros 31 metabolitos
+barplot(head(variabilidad,31), main="Variabilidad de los primeros 31 metabolitos", col="blue", las=2, ylim=c(0,6000))
+# Graficar diagrama de barras de la variabilidad de los ultimos 32 metabolitos
+barplot(tail(variabilidad,-32), main="Variabilidad de los ultimos 32 metabolitos", col="blue", las=2, ylim=c(0,6000))
+```
+
+## Mapa de calor de los metabolitos y muestras
+
+```{r}
+# Instalar paquete
+# install.packages("pheatmap")
+
+# Llamar libreria
+library(pheatmap)
+
+# Normalizar los datos
+data_norm = scale(t(assay(experimento)))
+
+# Obtener mapa de calor
+pheatmap(data_norm, main="Mapa de calor de los metabolitos y muestras", show_rownames=FALSE, show_colnames=FALSE)
+```
+
+## Mapa de calor de la correlación entre los  metabolitos
+
+```{r}
+# Obtener la matriz de correlacion
+cor_matrix = cor(t(assay(experimento)))
+
+# Crear mapa de calor de las correlaciones
+pheatmap(cor_matrix, main="Mapa de calor de correlación entre metabolitos", clustering_distance_rows="correlation", clustering_distance_cols="correlation", , show_rownames=FALSE, show_colnames=FALSE)
+```
+
+## Gráficas de los análisis de componentes principales
+
+```{r}
+# Llamar libreria
+library(ggplot2)
+
+# Obtener los grupos de muestras
+grupos = colData(experimento)
+
+# Realizar analisis de componentes principales
+pca = prcomp(t(assay(experimento)), scale.=TRUE)
+
+# Obtener datos del PCA en data frame
+pca_df = data.frame(pca$x)
+
+# Graficar PCA (primeros dos componentes)
+p1 = ggplot(pca_df, aes(PC1, PC2, color=grupos$grupo)) +
+  geom_point() +
+  labs(title="PCA de metabolitos y muestras", x="PC1", y="PC2") +
+  theme_minimal()
+# Imprimir
+print(p1)
+
+# Graficar PCA (primero y tercer componente)
+p2 = ggplot(pca_df, aes(PC1, PC3, color=grupos$grupo)) +
+  geom_point() +
+  labs(title="PCA de metabolitos y muestras", x="PC1", y="PC3") +
+  theme_minimal()
+# Imprimir
+print(p2)
+
+# Graficar PCA (segundo y tercer componente)
+p3 = ggplot(pca_df, aes(PC2, PC3, color=grupos$grupo)) +
+  geom_point() +
+  labs(title="PCA de metabolitos y muestras", x="PC2", y="PC3") +
+  theme_minimal()
+# Imprimir
+print(p3)
+
+# Obtener los nombres de los metabolitos
+metabolitos = rownames(rowData(experimento))
+
+# Definir categorias de metabolitos
+categorias = list(
+  "Metabolismo de Carbohidratos" = c("Glucose", "Pyruvate", "Lactate", "Acetate", "Citrate", "Fumarate", "Sucrose", "Xylose", "cis-Aconitate", "trans-Aconitate"),
+  
+  "Metabolismo de Aminoacidos" = c("Alanine", "Glutamine", "Glycine", "Serine", "Leucine", "Isoleucine", "Lysine", "Valine", "Threonine", "Histidine", "2-Aminobutyrate", "3-Aminoisobutyrate", "Guanidoacetate", "Methylguanidine", "Asparagine", "Betaine", "Ethanolamine", "Glycolate", "N,N-Dimethylglycine", "O-Acetylcarnitine", "Pyroglutamate", "Taurine", "Trigonelline", "Tryptophan", "Tyrosine", "pi-Methylhistidine", "tau-Methylhistidine", "2-Hydroxyisobutyrate", "3-Hydroxyisovalerate"),
+  
+  "Metabolismo de Lipidos" = c("Carnitine", "Acetone", "Adipate", "Trimethylamine N-oxide"),
+  
+  "Metabolismo de Acidos Organicos y Ciclo de Krebs" = c("Succinate", "Citrate", "Fumarate", "2-Oxoglutarate", "Acetate", "Acetone", "Formate", "Fucose", "cis-Aconitate", "trans-Aconitate", "Tartrate"),
+  
+  "Metabolismo de Nucleotidos y Bases Nitrogenadas" = c("Hypoxanthine", "Uracil", "Quinolinate"),
+  
+  "Vias de Detoxificacion y Microbioma" = c("Indoxyl sulfate", "Hippurate", "3-Indoxylsulfate", "4-Hydroxyphenylacetate"),
+  
+  "Otras Vias Metabolicas" = c("1,6-Anhydro-beta-D-glucose", "Dimethylamine", "Methylamine", "Pantothenate", "myo-Inositol", "1-Methylnicotinamide"),
+  
+  "Biomarcadores de Estres y Energia" = c("Creatine", "Creatinine", "3-Hydroxybutyrate")
+)
+
+# Encontrar la categoría correspondiente para cada metabolito
+categoria_df = data.frame(
+  metabolito=metabolitos,
+  categoria=sapply(metabolitos, function(metabolito) {
+    category=NA
+    for (cat in names(categorias)) {
+      if (metabolito %in% categorias[[cat]]) {
+        category=cat
+        break
+      }
+    }
+    return(category)
+  })
+)
+
+# Realizar analisis de componentes principales
+pca_metabolitos = prcomp(assay(experimento), scale.=TRUE)
+
+# Obtener datos del PCA en data frame
+pca_df_metabolitos = data.frame(pca_metabolitos$x)
+
+# Graficar PCA (primeros dos componentes)
+p1 = ggplot(pca_df_metabolitos, aes(PC1, PC2, color=categoria_df$categoria)) +
+  geom_point() +
+  labs(title="PCA de metabolitos y muestras", x="PC1", y="PC2") +
+  theme_minimal()
+# Imprimir
+print(p1)
+
+# Graficar PCA (primer y tercer componente)
+p2 = ggplot(pca_df_metabolitos, aes(PC1, PC3, color=categoria_df$categoria)) +
+  geom_point() +
+  labs(title="PCA de metabolitos y muestras", x="PC1", y="PC3") +
+  theme_minimal()
+# Imprimir
+print(p2)
+
+# Graficar PCA (segundo y tercer componente)
+p3 = ggplot(pca_df_metabolitos, aes(PC2, PC3, color=categoria_df$categoria)) +
+  geom_point() +
+  labs(title="PCA de metabolitos y muestras", x="PC2", y="PC3") +
+  theme_minimal()
+# Imprimir
+print(p3)
+```
