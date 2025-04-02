@@ -214,7 +214,7 @@ Finalmente, se evidenció la utilidad de gestionar proyectos de R con el apoyo d
 
 # Referencia - Repositorio
 
-Dirección del repositorio:
+Dirección del repositorio: https://github.com/L-Cifuentes-Y/Cifuentes-Yepes-LilianaCarolina-PEC1
 
 # Anexo
 
